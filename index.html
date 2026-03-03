@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Denah Kelas Otomatis</title>
+    <style>
+        :root { --boy-color: #e3f2fd; --girl-color: #fce4ec; --border: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eee; text-align: center; padding: 20px; }
+        .grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; max-width: 800px; margin: 20px auto; 
+        }
+        .desk { 
+            background: white; border: 2px solid var(--border); 
+            border-radius: 8px; padding: 10px; min-height: 70px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .row { display: flex; justify-content: space-around; gap: 5px; }
+        .seat { 
+            font-size: 0.8rem; font-weight: bold; padding: 5px; border-radius: 4px; width: 48%;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .L { background-color: var(--boy-color); border: 1px solid #90caf9; }
+        .P { background-color: var(--girl-color); border: 1px solid #f48fb1; }
+        .K { background-color: #f0f0f0; color: #ccc; border: 1px dashed #ccc; }
+        .legend { margin: 10px; font-size: 0.9rem; }
+        .info-box { background: white; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="info-box">
+        <h2>Denah Duduk Kelas (4x5)</h2>
+        <div id="date-info">Memuat...</div>
+        <div class="legend">
+            <span style="color: #1976d2">■</span> Laki-laki | <span style="color: #c2185b">■</span> Perempuan
+        </div>
+    </div>
+
+    <div class="grid" id="classGrid"></div>
+
+    <script>
+        // 1. DATA MURID (1-35)
+        const boysAbsen = [1, 2, 3, 10, 12, 14, 16, 18, 19, 20, 22, 23, 24, 26, 28, 29, 30, 35];
+        let students = [];
+        for(let i = 1; i <= 35; i++) {
+            students.push({
+                absen: i,
+                gender: boysAbsen.includes(i) ? 'L' : 'P'
+            });
+        }
+
+        // 2. FUNGSI ACAK DENGAN SEED (Agar hasil sama di semua HP)
+        function seededRandom(seed) {
+            let x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        function shuffle(array, seed) {
+            let m = array.length, t, i;
+            while (m) {
+                i = Math.floor(seededRandom(seed++) * m--);
+                t = array[m];
+                array[m] = array[i];
+                array[i] = t;
+            }
+            return array;
+        }
+
+        // 3. LOGIKA PENENTUAN WAKTU
+        function generateLayout() {
+            const now = new Date();
+            // Jika sudah jam 17:00 ke atas, gunakan seed hari esok
+            let displayDate = new Date(now);
+            if (now.getHours() >= 17) {
+                displayDate.setDate(now.getDate() + 1);
+            }
+
+            // Seed berdasarkan Hari (untuk posisi meja) dan Minggu (untuk pasangan)
+            const daySeed = displayDate.getFullYear() * 1000 + displayDate.getMonth() * 100 + displayDate.getDate();
+            const startOfYear = new Date(displayDate.getFullYear(), 0, 1);
+            const weekSeed = Math.ceil((((displayDate - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
+
+            // Pisahkan Gender
+            let boys = students.filter(s => s.gender === 'L');
+            let girls = students.filter(s => s.gender === 'P');
+
+            // Acak urutan murid per gender berdasarkan MINGGU (Pasangan tetap 1 minggu)
+            boys = shuffle([...boys], weekSeed);
+            girls = shuffle([...girls], weekSeed);
+
+            // Buat Pasangan (L-L dan P-P)
+            let pairs = [];
+            for(let i = 0; i < boys.length; i+=2) {
+                pairs.push([boys[i], boys[i+1] || {absen: "K", gender: "K"}]);
+            }
+            for(let i = 0; i < girls.length; i+=2) {
+                pairs.push([girls[i], girls[i+1] || {absen: "K", gender: "K"}]);
+            }
+
+            // Tambah meja kosong sampai 20 meja
+            while(pairs.length < 20) pairs.push([{absen: "K", gender: "K"}, {absen: "K", gender: "K"}]);
+
+            // Acak posisi meja berdasarkan HARI
+            let finalLayout = shuffle([...pairs], daySeed);
+
+            render(finalLayout, displayDate);
+        }
+
+        function render(layout, date) {
+            const grid = document.getElementById('classGrid');
+            const dateInfo = document.getElementById('date-info');
+            grid.innerHTML = '';
+            dateInfo.innerText = "Berlaku untuk: " + date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            layout.forEach((pair, index) => {
+                const desk = document.createElement('div');
+                desk.className = 'desk';
+                desk.innerHTML = `
+                    <div style="font-size:0.6rem; color:#aaa; margin-bottom:5px">MEJA ${index+1}</div>
+                    <div class="row">
+                        <div class="seat ${pair[0].gender}">${pair[0].absen}</div>
+                        <div class="seat ${pair[1].gender}">${pair[1].absen}</div>
+                    </div>
+                `;
+                grid.appendChild(desk);
+            });
+        }
+
+        generateLayout();
+    </script>
+</body>
+</html>
