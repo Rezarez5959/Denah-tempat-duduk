@@ -3,132 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Denah Kelas Otomatis</title>
+    <title>Denah Kelas Pro - Ketua Kelas</title>
     <style>
-        :root { --boy-color: #e3f2fd; --girl-color: #fce4ec; --border: #333; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eee; text-align: center; padding: 20px; }
-        .grid { 
-            display: grid; grid-template-columns: repeat(4, 1fr); 
-            gap: 10px; max-width: 800px; margin: 20px auto; 
-        }
-        .desk { 
-            background: white; border: 2px solid var(--border); 
-            border-radius: 8px; padding: 10px; min-height: 70px;
-            display: flex; flex-direction: column; justify-content: center;
-        }
+        :root { --boy: #e3f2fd; --girl: #fce4ec; --priority: #d0f9cb; --border: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; text-align: center; padding: 10px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .papan-tulis { width: 60%; margin: 0 auto 30px; padding: 10px; border: 4px solid #5d4037; background: #2e7d32; color: white; font-weight: bold; border-radius: 5px; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .desk { border: 2px solid var(--border); border-radius: 8px; padding: 8px; position: relative; min-height: 70px; display: flex; flex-direction: column; justify-content: center; }
+        
+        /* Area Baris 1 & 2 */
+        .priority-zone { border: 2px solid #1da60e; background-color: #f1fdf0; }
+        
         .row { display: flex; justify-content: space-around; gap: 5px; }
-        .seat { 
-            font-size: 0.8rem; font-weight: bold; padding: 5px; border-radius: 4px; width: 48%;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-        }
-        .L { background-color: var(--boy-color); border: 1px solid #90caf9; }
-        .P { background-color: var(--girl-color); border: 1px solid #f48fb1; }
-        .K { background-color: #f0f0f0; color: #ccc; border: 1px dashed #ccc; }
-        .legend { margin: 10px; font-size: 0.9rem; }
-        .info-box { background: white; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .seat { font-size: 0.85rem; font-weight: bold; padding: 8px 0; border-radius: 4px; width: 48%; border: 1px solid rgba(0,0,0,0.05); }
+        .L { background-color: var(--boy); border-bottom: 2px solid #bbdefb; }
+        .P { background-color: var(--girl); border-bottom: 2px solid #f8bbd0; }
+        .K { background-color: #eee; color: #bbb; border: 1px dashed #ccc; }
+        
+        .tag { font-size: 0.6rem; color: #888; margin-bottom: 5px; display: block; }
+        .priority-indicator { width: 8px; height: 8px; background: #1da60e; border-radius: 50%; display: inline-block; position: absolute; top: 5px; right: 5px; }
+        
+        .info-panel { margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .legend { font-size: 0.75rem; margin-top: 10px; display: flex; justify-content: center; gap: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="info-box">
-        <h2>Denah Duduk Kelas (4x5)</h2>
-        <div id="date-info">Memuat...</div>
+<div class="container">
+    <div class="info-panel">
+        <h2>Denah Duduk Kelas</h2>
+        <div id="date-display" style="font-weight: 500; color: #666;"></div>
         <div class="legend">
-            <span style="color: #1976d2">■</span> Laki-laki | <span style="color: #c2185b">■</span> Perempuan
+            <div><span style="background:var(--boy); padding:2px 5px; color: var(--boy);">00</span> Laki-laki</div>
+            <div><span style="background:var(--girl); padding:2px 5px; color: var(--girl);">00</span> Perempuan</div>
+            <div><span class="priority-indicator" style="position:static; display:inline-block;"></span> Murid Prioritas</div>
         </div>
     </div>
 
+    <div class="papan-tulis">PAPAN TULIS / MEJA GURU</div>
+
     <div class="grid" id="classGrid"></div>
+</div>
 
-    <script>
-        // 1. DATA MURID (1-35)
-        const boysAbsen = [1, 2, 3, 10, 12, 14, 16, 18, 19, 20, 22, 23, 24, 26, 28, 29, 30, 35];
-        let students = [];
-        for(let i = 1; i <= 35; i++) {
-            students.push({
-                absen: i,
-                gender: boysAbsen.includes(i) ? 'L' : 'P'
-            });
+<script>
+    // --- DATA ---
+    const priorityAbsen = [1, 6, 9, 10, 15, 19, 23, 27, 35];
+    const boysAbsen = [1, 2, 3, 10, 12, 14, 16, 18, 19, 20, 22, 23, 24, 26, 28, 29, 30, 35];
+    
+    let students = [];
+    for(let i = 1; i <= 35; i++) {
+        students.push({
+            absen: i,
+            gender: boysAbsen.includes(i) ? 'L' : 'P',
+            isPriority: priorityAbsen.includes(i)
+        });
+    }
+
+    // --- ALGORITMA ---
+    function seededRandom(seed) {
+        let x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    }
+
+    function shuffle(array, seed) {
+        let m = array.length, t, i;
+        while (m) {
+            i = Math.floor(seededRandom(seed++) * m--);
+            t = array[m];
+            array[m] = array[i];
+            array[i] = t;
+        }
+        return array;
+    }
+
+    function generateLayout() {
+        const now = new Date();
+        let displayDate = new Date(now);
+        if (now.getHours() >= 17) displayDate.setDate(now.getDate() + 1);
+
+        const daySeed = displayDate.getFullYear() * 10000 + (displayDate.getMonth() + 1) * 100 + displayDate.getDate();
+        // weekSeed menggunakan format Tahun + Minggu ke-X
+        const startOfYear = new Date(displayDate.getFullYear(), 0, 1);
+        const weekNumber = Math.ceil((((displayDate - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
+        const weekSeed = displayDate.getFullYear() * 100 + weekNumber;
+
+        // 1. Acak Pasangan (Berdasarkan MINGGU)
+        let boys = students.filter(s => s.gender === 'L');
+        let girls = students.filter(s => s.gender === 'P');
+
+        // Diacak dulu semua tanpa memandang prioritas agar bisa berbaur
+        boys = shuffle([...boys], weekSeed);
+        girls = shuffle([...girls], weekSeed);
+
+        let allPairs = [];
+        for(let i = 0; i < boys.length; i+=2) {
+            allPairs.push([boys[i], boys[i+1] || {absen: "K", gender: "K", isPriority: false}]);
+        }
+        for(let i = 0; i < girls.length; i+=2) {
+            allPairs.push([girls[i], girls[i+1] || {absen: "K", gender: "K", isPriority: false}]);
         }
 
-        // 2. FUNGSI ACAK DENGAN SEED (Agar hasil sama di semua HP)
-        function seededRandom(seed) {
-            let x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
+        // Tambah meja kosong sampai 20
+        while(allPairs.length < 20) allPairs.push([{absen:"K", gender:"K"}, {absen:"K", gender:"K"}]);
+
+        // 2. Pisahkan Meja Prioritas vs Regular
+        // Meja dianggap PRIORITAS jika salah satu atau kedua muridnya masuk daftar prioritas
+        let priorityDesks = allPairs.filter(pair => pair[0].isPriority || pair[1].isPriority);
+        let regularDesks = allPairs.filter(pair => !pair[0].isPriority && !pair[1].isPriority);
+
+        // 3. Distribusi Meja ke Area Depan (Baris 1 & 2 = 8 Meja)
+        // Acak urutan meja di masing-masing grup (Berdasarkan HARI)
+        priorityDesks = shuffle(priorityDesks, daySeed);
+        regularDesks = shuffle(regularDesks, daySeed);
+
+        let zoneFront = [];
+        let zoneBack = [];
+
+        // Masukkan semua meja prioritas ke depan
+        zoneFront = [...priorityDesks];
+
+        // Jika meja prioritas > 8, maka terpaksa meluber ke belakang (tapi dengan 9 orang, maksimal hanya 9 meja jika semua beda meja, biasanya pas di 5-8 meja)
+        // Jika meja prioritas < 8, ambil dari meja regular untuk memenuhi baris depan
+        while(zoneFront.length < 8) {
+            if(regularDesks.length > 0) zoneFront.push(regularDesks.shift());
+            else break;
         }
 
-        function shuffle(array, seed) {
-            let m = array.length, t, i;
-            while (m) {
-                i = Math.floor(seededRandom(seed++) * m--);
-                t = array[m];
-                array[m] = array[i];
-                array[i] = t;
-            }
-            return array;
-        }
+        // Sisa meja masuk ke belakang
+        zoneBack = [...regularDesks];
+        
+        // Re-shuffle zona depan agar meja prioritas tidak selalu di pojok kiri atas
+        zoneFront = shuffle(zoneFront, daySeed + 1);
 
-        // 3. LOGIKA PENENTUAN WAKTU
-        function generateLayout() {
-            const now = new Date();
-            // Jika sudah jam 17:00 ke atas, gunakan seed hari esok
-            let displayDate = new Date(now);
-            if (now.getHours() >= 17) {
-                displayDate.setDate(now.getDate() + 1);
-            }
+        render([...zoneFront, ...zoneBack], displayDate);
+    }
 
-            // Seed berdasarkan Hari (untuk posisi meja) dan Minggu (untuk pasangan)
-            const daySeed = displayDate.getFullYear() * 1000 + displayDate.getMonth() * 100 + displayDate.getDate();
-            const startOfYear = new Date(displayDate.getFullYear(), 0, 1);
-            const weekSeed = Math.ceil((((displayDate - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
+    function render(layout, date) {
+        const grid = document.getElementById('classGrid');
+        grid.innerHTML = '';
+        document.getElementById('date-display').innerText = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-            // Pisahkan Gender
-            let boys = students.filter(s => s.gender === 'L');
-            let girls = students.filter(s => s.gender === 'P');
-
-            // Acak urutan murid per gender berdasarkan MINGGU (Pasangan tetap 1 minggu)
-            boys = shuffle([...boys], weekSeed);
-            girls = shuffle([...girls], weekSeed);
-
-            // Buat Pasangan (L-L dan P-P)
-            let pairs = [];
-            for(let i = 0; i < boys.length; i+=2) {
-                pairs.push([boys[i], boys[i+1] || {absen: "K", gender: "K"}]);
-            }
-            for(let i = 0; i < girls.length; i+=2) {
-                pairs.push([girls[i], girls[i+1] || {absen: "K", gender: "K"}]);
-            }
-
-            // Tambah meja kosong sampai 20 meja
-            while(pairs.length < 20) pairs.push([{absen: "K", gender: "K"}, {absen: "K", gender: "K"}]);
-
-            // Acak posisi meja berdasarkan HARI
-            let finalLayout = shuffle([...pairs], daySeed);
-
-            render(finalLayout, displayDate);
-        }
-
-        function render(layout, date) {
-            const grid = document.getElementById('classGrid');
-            const dateInfo = document.getElementById('date-info');
-            grid.innerHTML = '';
-            dateInfo.innerText = "Berlaku untuk: " + date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-            layout.forEach((pair, index) => {
-                const desk = document.createElement('div');
-                desk.className = 'desk';
-                desk.innerHTML = `
-                    <div style="font-size:0.6rem; color:#aaa; margin-bottom:5px">MEJA ${index+1}</div>
-                    <div class="row">
-                        <div class="seat ${pair[0].gender}">${pair[0].absen}</div>
-                        <div class="seat ${pair[1].gender}">${pair[1].absen}</div>
+        layout.forEach((pair, i) => {
+            const isFrontRow = i < 8; 
+            const desk = document.createElement('div');
+            desk.className = `desk ${isFrontRow ? 'priority-zone' : ''}`;
+            
+            let seatHTML = '';
+            pair.forEach(student => {
+                const priorityDot = student.isPriority ? '<div class="priority-indicator"></div>' : '';
+                seatHTML += `
+                    <div class="seat ${student.gender}">
+                        ${priorityDot}
+                        ${student.absen}
                     </div>
                 `;
-                grid.appendChild(desk);
             });
-        }
 
-        generateLayout();
-    </script>
+            desk.innerHTML = `
+                <span class="tag">MEJA ${i + 1}</span>
+                <div class="row">${seatHTML}</div>
+            `;
+            grid.appendChild(desk);
+        });
+    }
+
+    generateLayout();
+</script>
+
 </body>
 </html>
